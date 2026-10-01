@@ -24,11 +24,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build web assets
-        run: npm run build --if-present
-
       - name: Install Capacitor Android
         run: npx cap add android || true
+
+      - name: Build web assets
+        run: npm run build --if-present
 
       - name: Sync web project
         run: npx cap sync android
