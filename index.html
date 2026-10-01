@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>GameBox Emulator</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f4fb;--card:#fff;--ink:#141a2e;--mut:#5b6585;--ac:#3b5bff;--acink:#fff;--ok:#0f7a56;--wa:#94600a;--line:#dce1f0;--okb:#dcf5ea;--wab:#fdf0d5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1224;--card:#161c33;--ink:#eef1ff;--mut:#9aa5c9;--ac:#7c93ff;--acink:#0d1224;--ok:#6fe0b3;--wa:#f2c46d;--line:#262e4d;--okb:#12382d;--wab:#3a2e10}}
+:root[data-theme="dark"]{--bg:#0d1224;--card:#161c33;--ink:#eef1ff;--mut:#9aa5c9;--ac:#7c93ff;--acink:#0d1224;--ok:#6fe0b3;--wa:#f2c46d;--line:#262e4d;--okb:#12382d;--wab:#3a2e10}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "DM Sans",system-ui,sans-serif;padding-bottom:84px}
+main{max-width:640px;margin:0 auto;padding:20px 16px}
+h1,h2{font-family:"Bricolage Grotesque",system-ui,sans-serif;line-height:1.1;margin:0 0 12px}
+h1{font-size:34px;font-weight:800}h2{font-size:21px;font-weight:600;margin-top:26px}
+p{margin:0 0 12px;color:var(--mut)}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:14px;padding:12px 16px;background:var(--card);border:1px solid var(--line)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.big{display:block;width:100%;text-align:left;padding:22px 20px;margin-bottom:12px;border-radius:20px;font-family:"Bricolage Grotesque",sans-serif;font-size:22px;font-weight:800;background:var(--ac);color:var(--acink);border:0}
+.big small{display:block;font:400 14px "DM Sans",sans-serif;opacity:.85;margin-top:4px}
+.big.alt{background:var(--card);color:var(--ink);border:2px solid var(--ac)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:10px}
+.row{display:flex;gap:12px;align-items:center}
+.tile{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;color:#fff;font:800 24px "Bricolage Grotesque",sans-serif;flex:none}
+.grow{flex:1;min-width:0}.name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.meta{font-size:14px;color:var(--mut)}
+.badge{display:inline-block;padding:2px 10px;border-radius:99px;font-size:13px;font-weight:700}
+.b-ok{background:var(--okb);color:var(--ok)}.b-wa{background:var(--wab);color:var(--wa)}
+.play{background:var(--ac);color:var(--acink);border:0;font-weight:700}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:4px 0 12px}
+.chips button{white-space:nowrap;padding:8px 14px;border-radius:99px}.chips .on{background:var(--ac);color:var(--acink);border-color:var(--ac)}
+input[type=text],input[type=search],select{width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--card)}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav button{flex:1;border:0;border-radius:0;background:none;padding:14px 4px;font-size:14px;color:var(--mut)}
+nav button[aria-current=page]{color:var(--ac);font-weight:700}
+.modal{position:fixed;inset:0;background:rgba(5,8,20,.72);display:grid;place-items:center;padding:20px;z-index:9}
+.modal .card{max-width:420px;width:100%;margin:0;padding:20px}
+.bar{height:10px;border-radius:9px;background:var(--line);overflow:hidden;margin:16px 0}.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width 1.8s ease}
+.ovl{font-size:14px;background:var(--bg);border-radius:12px;padding:10px 12px;margin-top:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}.seg .on{background:var(--ac);color:var(--acink);border-color:var(--ac)}
+label.f{display:block;margin:14px 0 6px;font-weight:500}
+.x{color:var(--mut);padding:8px 10px}
+@media(prefers-reduced-motion:reduce){.bar i{transition:none}}
+
+<style id="emulator-enhancements">
+#emulatorScreen{position:fixed;inset:0;background:#000;z-index:100;display:none;flex-direction:column}
+#emulatorTop{height:54px;display:flex;align-items:center;gap:10px;padding:8px 12px;background:#111;color:#fff;flex:none}
+#emulatorTitle{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+#emulatorCanvas{flex:1;min-height:0;background:#000}
+#emulatorCanvas>div{width:100%!important;height:100%!important}
+#emulatorCanvas iframe{width:100%;height:100%;border:0}
+#romInput{display:none}
+.ejs-wrap{width:100%;height:100%}
+.emu-note{font-size:12px;opacity:.75;padding:6px 10px;background:#111;color:#ddd}
+</style>
+</style></head>
+<body>
+<main id="app"></main>
+<nav id="nav"></nav>
+<div id="modal"></div>
+
+<div id="emulatorScreen">
+  <div id="emulatorTop">
+    <button id="emuBack" style="background:#222;color:#fff;border-color:#444">← Retour</button>
+    <div id="emulatorTitle">GameBox Emulator</div>
+    <button id="emuFullscreen" style="background:#222;color:#fff;border-color:#444">⛶</button>
+  </div>
+  <div id="emulatorCanvas"></div>
+  <div class="emu-note">GameBox utilise EmulatorJS pour les systèmes rétro compatibles. Utilise uniquement des jeux/ROM que tu as le droit d'utiliser.</div>
+</div>
+<input id="romInput" type="file" hidden
+ accept=".nes,.fds,.unf,.unif,.smc,.sfc,.fig,.gb,.gbc,.gba,.bin,.cue,.img,.mdf,.pbp,.gen,.md,.sms,.gg,.pce,.zip">
+<input id="fg" type="file" hidden multiple accept=".nsp,.xci,.exe,.msi,.nes,.fds,.unf,.unif,.sfc,.smc,.fig,.gb,.gbc,.gba,.gen,.md,.sms,.gg,.pce,.bin,.cue,.img,.mdf,.pbp,.zip">
+<input id="fa" type="file" hidden multiple accept=".apk,.xapk,.apks">
+<script>
+const FM={apk:['android','Android'],xapk:['android','Android'],apks:['android','Android'],exe:['pc','Windows'],msi:['pc','Windows'],nsp:['switch','Nintendo Switch'],xci:['switch','Nintendo Switch'],nes:['retro','NES'],sfc:['retro','Super Nintendo'],smc:['retro','Super Nintendo'],gb:['retro','Game Boy'],gbc:['retro','Game Boy'],gba:['retro','Game Boy Advance'],gen:['retro','Sega Genesis'],md:['retro','Sega Genesis'],sms:['retro','Sega Master System'],gg:['retro','Game Gear'],pce:['retro','PC Engine'],bin:['retro','PlayStation'],cue:['retro','PlayStation'],img:['retro','PlayStation'],mdf:['retro','PlayStation'],pbp:['retro','PlayStation']};
+const BK={android:{n:'Android natif',s:'Disponible',ok:1,d:'Lance une appli déjà installée ou un APK via le système Android.'},
+pc:{n:'Couche PC (Wine / Proton)',s:'Expérimental',d:'Backend externe à brancher. Tous les jeux ne fonctionnent pas.'},
+switch:{n:'Émulateur Switch externe',s:'Backend requis',d:'GameBox ne fournit ni clés, ni firmware, ni jeux. Il faut un émulateur installé et tes propres sauvegardes de console.'},
+retro:{n:'Cores libretro',s:'Prévu',d:'Pour des ROM que tu possèdes.'}};
+const PR={perf:{n:'Performance',res:'720p',fps:60,vs:0},qual:{n:'Qualité',res:'1080p',fps:60,vs:1},eco:{n:'Économie d’énergie',res:'540p',fps:30,vs:1},cus:{n:'Personnalisé'}};
+const S={tab:'home',items:[],f:'Tous',q:'',prof:'perf',res:'720p',fps:60,vs:0,vol:80,ovl:0};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sz=b=>b==null?'À télécharger':b>1e9?(b/1e9).toFixed(1)+' Go':b>1e6?(b/1e6).toFixed(1)+' Mo':Math.max(1,Math.round(b/1e3))+' Ko';
+const hue=s=>[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%360;
+const comp=it=>it.bk?BK[it.bk]:{n:'Aucun',s:'Format non supporté',d:'Ce format n’est pris en charge par aucun backend.'};
+
+function add(name,size,ext,file){const f=FM[ext];S.items.unshift({id:Math.random(),name:name.replace(/\.[^.]+$/,''),size,plat:f?f[1]:'Inconnu',bk:f?f[0]:null,fav:0,last:0,file:file||null});}
+function pick(id){$(id).value='';$(id).click();}
+$('#fg').onchange=$('#fa').onchange=e=>{for(const f of e.target.files)add(f.name,f.size,f.name.split('.').pop().toLowerCase(),f);if(e.target.files.length){go('lib');warn(S.items[0].id);}};
+
+function nav(){const T=[['home','Accueil'],['lib','Bibliothèque'],['link','Lien'],['set','Réglages']];
+$('#nav').innerHTML=T.map(([k,l])=>`<button data-k="${k}" ${S.tab==k?'aria-current="page"':''}>${l}</button>`).join('');
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.k));}
+function go(t){S.tab=t;nav();({home,lib,link,set}[t])();scrollTo(0,0);}
+
+function card(it){const c=comp(it),ok=c.ok;
+return `<div class="card"><div class="row"><div class="tile" style="background:hsl(${hue(it.name)} 50% 40%)">${esc(it.name[0].toUpperCase())}</div>
+<div class="grow"><div class="name">${esc(it.name)}</div><div class="meta">${esc(it.plat)} · ${sz(it.size)}</div>
+<span class="badge ${ok?'b-ok':'b-wa'}">${esc(c.s)}</span></div>
+<button class="play" data-p="${it.id}" ${it.bk?'':'disabled'}>Jouer</button></div>
+<div class="row" style="margin-top:8px"><button class="x" data-fv="${it.id}" aria-label="Favori">${it.fav?'★ Favori':'☆ Favori'}</button><button class="x" data-rm="${it.id}">Supprimer</button></div></div>`;}
+function bind(root){root.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>warn(+b.dataset.p));
+root.querySelectorAll('[data-fv]').forEach(b=>b.onclick=()=>{const i=S.items.find(x=>x.id==b.dataset.fv);i.fav=!i.fav;go(S.tab);});
+root.querySelectorAll('[data-rm]').forEach(b=>b.onclick=()=>{S.items=S.items.filter(x=>x.id!=b.dataset.rm);go(S.tab);});}
+
+function home(){const rec=S.items.filter(i=>i.last).sort((a,b)=>b.last-a.last).slice(0,3);
+$('#app').innerHTML=`<h1>Bienvenue dans GameBox Emulator</h1><p>Importe un jeu ou une application que tu possèdes. Rien ne s’ouvre dans un navigateur : GameBox choisit le backend adapté.</p>
+<button class="big" id="b1">Importer un jeu<small>Switch, Windows, ROM que tu possèdes</small></button>
+<button class="big alt" id="b2">Importer une application<small>APK ou appli Android</small></button>
+<button class="big alt" id="b3">Ajouter depuis un lien<small>Analyse du lien avant tout téléchargement</small></button>
+${rec.length?`<h2>Récemment utilisés</h2>`+rec.map(card).join(''):''}
+<h2>Backends</h2>`+Object.values(BK).map(b=>`<div class="card"><div class="row"><div class="grow"><div class="name">${b.n}</div><div class="meta">${b.d}</div></div><span class="badge ${b.ok?'b-ok':'b-wa'}">${b.s}</span></div></div>`).join('');
+$('#b1').onclick=()=>pick('#fg');$('#b2').onclick=()=>pick('#fa');$('#b3').onclick=()=>go('link');bind($('#app'));}
+
+function lib(){const F=['Tous','Favoris','Android','Windows','Nintendo Switch','Rétro'];
+$('#app').innerHTML=`<h1>Bibliothèque</h1><input type="search" id="q" placeholder="Rechercher un jeu" value="${esc(S.q)}" aria-label="Rechercher">
+<div class="chips">${F.map(f=>`<button class="${S.f==f?'on':''}" data-f="${f}">${f}</button>`).join('')}</div><div id="list"></div>`;
+$('#q').oninput=e=>{S.q=e.target.value;list();};
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{S.f=b.dataset.f;lib();});list();}
+function list(){const retro=['NES','Super Nintendo','Game Boy','Game Boy Advance','Sega Genesis','Sega Master System','Game Gear','PC Engine','PlayStation'];
+const r=S.items.filter(i=>i.name.toLowerCase().includes(S.q.toLowerCase())&&(S.f=='Tous'||(S.f=='Favoris'?i.fav:S.f=='Rétro'?retro.includes(i.plat):i.plat==S.f)));
+$('#list').innerHTML=r.length?r.map(card).join(''):`<p>Aucun jeu ici. Utilise Importer sur l’accueil pour ajouter un fichier que tu possèdes.</p>`;bind($('#list'));}
+
+function analyze(u){let x;try{x=new URL(u)}catch{return{t:'Lien invalide',d:'Colle une adresse complète qui commence par https://.'}}
+const h=x.hostname,ext=x.pathname.split('.').pop().toLowerCase();
+if(/play\.google|apps\.apple|steampowered|epicgames|nintendo\.com|microsoft\.com/.test(h))return{t:'Page de boutique',d:'Il n’y a rien à importer depuis une boutique. Installe le jeu par la boutique officielle, puis ajoute-le depuis ton appareil.'};
+if(FM[ext])return{t:'Fichier direct : '+FM[ext][1],d:'Ce lien pointe vers un fichier '+ext.toUpperCase()+'. Importe-le seulement si tu en as le droit. Il sera ajouté à la bibliothèque. Pour une vraie émulation, importe le fichier de jeu localement.',ok:1,ext,name:x.pathname.split('/').pop()};
+return{t:'Page Web',d:'Aucun fichier téléchargeable détecté. GameBox n’ouvrira pas de navigateur et n’affichera pas le site.'};}
+function link(){$('#app').innerHTML=`<h1>Ajouter depuis un lien</h1><p>Le lien s’ouvre dans l’appli, jamais dans un navigateur externe.</p><input type="text" id="u" placeholder="https://" inputmode="url" aria-label="Lien"><div style="height:10px"></div><button class="big" id="an" style="font-size:18px;padding:16px">Ouvrir</button><div id="res"></div>`;
+$('#an').onclick=()=>{const v=$('#u').value.trim(),r=analyze(v);if(/^https?:\/\//i.test(v)&&!r.ok){view(v);return;}$('#res').innerHTML=`<div class="card"><div class="name">${esc(r.t)}</div><p>${esc(r.d)}</p>${r.ok?'<button class="play" id="imp">Importer</button>':''}</div>`;
+if(r.ok)$('#imp').onclick=()=>{add(r.name,null,r.ext,null);go('lib');warn(S.items[0].id);};};}
+
+function set(){const c=S.prof=='cus';
+$('#app').innerHTML=`<h1>Réglages</h1><h2 style="margin-top:8px">Profil d’émulation</h2><div class="seg">${Object.entries(PR).map(([k,p])=>`<button class="${S.prof==k?'on':''}" data-pr="${k}">${p.n}</button>`).join('')}</div>
+<label class="f" for="rs">Résolution</label><select id="rs">${['540p','720p','1080p','1440p'].map(v=>`<option ${S.res==v?'selected':''}>${v}</option>`).join('')}</select>
+<label class="f" for="fp">Limite FPS</label><select id="fp">${[30,60,90,120].map(v=>`<option ${S.fps==v?'selected':''}>${v}</option>`).join('')}</select>
+<label class="f"><input type="checkbox" id="vs" ${S.vs?'checked':''}> VSync</label>
+<label class="f" for="vo">Volume : <span id="vv">${S.vol}</span> %</label><input type="range" id="vo" min="0" max="100" value="${S.vol}" style="width:100%">
+<label class="f"><input type="checkbox" id="ov" ${S.ovl?'checked':''}> Afficher l’overlay de performances</label>
+<p>Manette, clavier/souris, langue, dossiers de stockage et sauvegardes viendront avec l’app native.</p>`;
+document.querySelectorAll('[data-pr]').forEach(b=>b.onclick=()=>{const k=b.dataset.pr;S.prof=k;if(PR[k].res)Object.assign(S,{res:PR[k].res,fps:PR[k].fps,vs:PR[k].vs});set();});
+const cus=()=>{S.prof='cus';};
+$('#rs').onchange=e=>{S.res=e.target.value;cus();set();};$('#fp').onchange=e=>{S.fps=+e.target.value;cus();set();};
+$('#vs').onchange=e=>{S.vs=e.target.checked?1:0;cus();set();};$('#vo').oninput=e=>{S.vol=e.target.value;$('#vv').textContent=S.vol;};
+$('#ov').onchange=e=>{S.ovl=e.target.checked?1:0;};}
+
+function view(u){$('#modal').innerHTML=`<div class="modal" style="padding:0;place-items:stretch"><div style="display:flex;flex-direction:column;width:100%;background:var(--bg)"><div class="row" style="padding:10px 12px;padding-top:calc(10px + env(safe-area-inset-top,0px))"><div class="grow meta name">${esc(u)}</div><button id="cv">Fermer</button></div><iframe src="${esc(u)}" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms" style="flex:1;border:0;background:#fff" title="Page"></iframe><div class="meta" style="padding:8px 12px">Si la page reste vide, le site refuse l’affichage intégré. L’app native utilisera une WebView qui reste dans l’appli.</div></div></div>`;$('#cv').onclick=close;}
+let tm;
+function close(){clearInterval(tm);$('#modal').innerHTML='';}
+function warn(id){const it=S.items.find(x=>x.id==id);
+$('#modal').innerHTML=`<div class="modal"><div class="card"><div class="name">Fichier non vérifié</div><p>« ${esc(it.name)} » est traité comme non fiable : exécution isolée, sans accès à tes photos, contacts ou autres fichiers. Continuer ?</p><div class="row"><button id="no">Annuler</button><button class="play" id="yes">Continuer</button></div></div></div>`;
+$('#no').onclick=close;$('#yes').onclick=()=>run(it);}
+
+function coreForExt(ext){
+  ext=(ext||'').toLowerCase();
+  const map={
+    nes:'nes',fds:'nes',unf:'nes',unif:'nes',
+    smc:'snes',sfc:'snes',fig:'snes',
+    gb:'gb',gbc:'gbc',gba:'gba',
+    gen:'segaMD',md:'segaMD',sms:'segaMS',gg:'segaGG',
+    pce:'pce',
+    bin:'psx',cue:'psx',img:'psx',mdf:'psx',pbp:'psx'
+  };
+  return map[ext]||null;
+}
+
+function launchEmulator(file,it){
+  const ext=file.name.split('.').pop().toLowerCase();
+  const core=coreForExt(ext);
+  if(!core){
+    close();
+    alert("Ce format n'est pas encore pris en charge par le moteur rétro intégré.");
+    return;
+  }
+
+  const screen=$('#emulatorScreen');
+  const canvas=$('#emulatorCanvas');
+  $('#emulatorTitle').textContent=it.name;
+  canvas.innerHTML='<div id="game" class="ejs-wrap"></div>';
+  screen.style.display='flex';
+
+  const url=URL.createObjectURL(file);
+  window.__gameBoxRomUrl=url;
+
+  // EmulatorJS exposes these globals before loading loader.js.
+  window.EJS_player='#game';
+  window.EJS_core=core;
+  window.EJS_gameUrl=url;
+  window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
+  window.EJS_language='fr-FR';
+  window.EJS_startOnLoaded=true;
+  window.EJS_fullscreenOnLoaded=false;
+  window.EJS_volume=Math.max(0,Math.min(1,(Number(S.vol)||80)/100));
+
+  const old=document.getElementById('gamebox-ejs-loader');
+  if(old) old.remove();
+
+  const script=document.createElement('script');
+  script.id='gamebox-ejs-loader';
+  script.src='https://cdn.emulatorjs.org/stable/data/loader.js';
+  script.onload=()=>{ it.last=Date.now(); };
+  script.onerror=()=>{
+    canvas.innerHTML='<div style="color:#fff;padding:24px;font-family:system-ui">Impossible de charger le moteur d’émulation. Vérifie la connexion Internet.</div>';
+  };
+  document.body.appendChild(script);
+}
+
+function run(it){
+  const c=comp(it);
+  const file=it.file;
+  if(!file){
+    $('#modal').innerHTML=`<div class="modal"><div class="card">
+      <div class="name">Fichier non disponible</div>
+      <p>Réimporte ce jeu depuis l’accueil pour pouvoir le lancer.</p>
+      <button id="cl" style="margin-top:10px">Fermer</button>
+    </div></div>`;
+    $('#cl').onclick=close;
+    return;
+  }
+  close();
+  launchEmulator(file,it);
+}
+
+$('#emuBack').onclick=()=>{
+  $('#emulatorScreen').style.display='none';
+  $('#emulatorCanvas').innerHTML='';
+  const old=document.getElementById('gamebox-ejs-loader');
+  if(old)old.remove();
+  if(window.__gameBoxRomUrl){URL.revokeObjectURL(window.__gameBoxRomUrl);window.__gameBoxRomUrl=null;}
+};
+$('#emuFullscreen').onclick=()=>{
+  const el=$('#emulatorCanvas');
+  if(el.requestFullscreen)el.requestFullscreen();
+};
+
+go('home');
+</script>
+</body></html>
