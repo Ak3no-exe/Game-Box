@@ -24,9 +24,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Create www directory if missing
-        run: mkdir -p www
-
       - name: Install Capacitor Android
         run: npx cap add android || true
 
